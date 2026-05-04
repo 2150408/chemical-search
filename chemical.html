@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>化学品信息查询助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px 16px 40px;
+            color: #1e2a3e;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 头部标题 */
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #1e6f5c, #289672);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .header p {
+            font-size: 14px;
+            color: #5e6f8d;
+            margin-top: 6px;
+        }
+
+        /* 搜索卡片 */
+        .search-card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
+            padding: 20px 18px;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+        }
+        .search-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 44px;
+            font-size: 16px;
+            background-color: #fefefe;
+            transition: 0.2s;
+            outline: none;
+            font-family: inherit;
+            color: #0f172a;
+        }
+        .search-input:focus {
+            border-color: #289672;
+            box-shadow: 0 0 0 3px rgba(40, 150, 114, 0.1);
+        }
+        .search-btn {
+            background: #1e6f5c;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 44px;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-family: inherit;
+        }
+        .search-btn:active {
+            background: #0e5544;
+            transform: scale(0.97);
+        }
+        .hint {
+            font-size: 12px;
+            color: #7e8a98;
+            margin-top: 12px;
+            text-align: center;
+            background: #f1f5f9;
+            display: inline-block;
+            width: 100%;
+            padding: 8px;
+            border-radius: 30px;
+        }
+
+        /* 结果区域 */
+        .result-area {
+            margin-top: 8px;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: transform 0.1s;
+        }
+        .card-header {
+            background: #f8fafc;
+            padding: 14px 20px;
+            border-bottom: 1px solid #eef2f6;
+        }
+        .card-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e6f5c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header h3::before {
+            content: "▍";
+            font-size: 20px;
+            font-weight: 500;
+            color: #289672;
+        }
+        .card-content {
+            padding: 16px 20px;
+        }
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            font-size: 15px;
+            line-height: 1.45;
+        }
+        .info-label {
+            width: 100px;
+            flex-shrink: 0;
+            font-weight: 500;
+            color: #475569;
+        }
+        .info-value {
+            flex: 1;
+            color: #0f172a;
+            word-break: break-word;
+        }
+        /* 法规信息内部子项样式，类似info-row但简洁重排 */
+        .reg-item {
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #edf2f7;
+        }
+        .reg-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .reg-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+        .reg-desc {
+            font-size: 14px;
+            color: #1e2a3e;
+            background: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 14px;
+            display: inline-block;
+            width: auto;
+        }
+        .badge-yes {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .badge-no {
+            background: #e2f0e8;
+            color: #1e6f5c;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .empty-state {
+            background: white;
+            border-radius: 28px;
+            padding: 48px 24px;
+            text-align: center;
+            color: #7c8ba0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            font-size: 15px;
+        }
+        .error-message {
+            background: #fff5f0;
+            border-left: 5px solid #e07c3c;
+            padding: 14px 18px;
+            border-radius: 20px;
+            color: #b45a2b;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        footer {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 32px;
+            padding-top: 12px;
+            border-top: 1px solid #e2edf2;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🧪 化学品信息助手</h1>
+        <p>输入中文名 / 英文名 / CAS号 · 精确查询</p>
+    </div>
+
+    <div class="search-card">
+        <div class="input-group">
+            <input type="text" id="chemicalInput" class="search-input" placeholder="例: 甲醇 / Methanol / 67-56-1" autocomplete="off">
+            <button id="searchBtn" class="search-btn">查询</button>
+        </div>
+        <div class="hint">
+            💡 支持精确匹配：化学品中文名、英文名或CAS号完全一致
+        </div>
+    </div>
+
+    <div id="resultContainer" class="result-area">
+        <!-- 动态卡片将渲染在此 -->
+        <div class="empty-state">
+            🔍 请输入化学品名称或CAS号，点击查询<br>将展示详细的5类信息卡片
+        </div>
+    </div>
+    <footer>数据基于标准化学品库 · 仅供查询参考</footer>
+</div>
+
+<script>
+    // ======================== 化学品数据集 (硬编码示例，共3条，可扩展至数百条) ========================
+    // 每条记录包含5大模块: 基本信息、物理化学性质、危险性分类、安全术语、法规信息
+    const chemicalsData = [
+        {
+            // 甲醇 Methanol
+            basic: {
+                chineseName: "甲醇",
+                englishName: "Methanol",
+                cas: "67-56-1",
+                molecularFormula: "CH₄O",
+                molecularWeight: "32.04 g/mol"
+            },
+            physChem: {
+                meltingPoint: "-97.6 °C",
+                boilingPoint: "64.7 °C",
+                density: "0.791 g/cm³ (20°C)",
+                flashPoint: "12 °C (闭杯)"
+            },
+            hazard: {
+                ghsCategory: "易燃液体 类别2；急性毒性(经口) 类别3*；特异性靶器官毒性-单次接触 类别1",
+                pictogram: "🔥 火焰 | 💀 健康危险"
+            },
+            safety: {
+                sPhrases: "S7: 保持容器密闭；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S45: 发生事故或不适，立即就医"
+            },
+            regulation: {
+                dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃有毒" },
+                easyDrug: { is: true, desc: "属于易制毒化学品（第三类），需备案管理" },
+                easyExplosive: { is: false, desc: "未列入易制爆危险化学品名录" }
+            }
+        },
+        {
+            // 丙酮 Acetone
+            basic: {
+                chineseName: "丙酮",
+                englishName: "Acetone",
+                cas: "67-64-1",
+                molecularFormula: "C₃H₆O",
+                molecularWeight: "58.08 g/mol"
+            },
+            physChem: {
+                meltingPoint: "-94.9 °C",
+                boilingPoint: "56.2 °C",
+                density: "0.7845 g/cm³",
+                flashPoint: "-20 °C"
+            },
+            hazard: {
+                ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；特异性靶器官毒性-单次接触 类别3",
+                pictogram: "🔥 火焰 | ⚠️ 感叹号"
+            },
+            safety: {
+                sPhrases: "S9: 保持容器在通风良好处；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+            },
+            regulation: {
+                dangerousChemical: { is: true, desc: "危险化学品 (高度易燃)" },
+                easyDrug: { is: true, desc: "列入易制毒化学品名录 (第三类)，受管制" },
+                easyExplosive: { is: false, desc: "不属于易制爆化学品" }
+            }
+        },
+        {
+            // 苯 Benzene
+            basic: {
+                chineseName: "苯",
+                englishName: "Benzene",
+                cas: "71-43-2",
+                molecularFormula: "C₆H₆",
+                molecularWeight: "78.11 g/mol"
+            },
+            physChem: {
+                meltingPoint: "5.5 °C",
+                boilingPoint: "80.1 °C",
+                density: "0.8765 g/cm³",
+                flashPoint: "-11 °C"
+            },
+            hazard: {
+                ghsCategory: "易燃液体 类别2；致癌性 类别1A；生殖细胞致突变性 类别1B；特异性靶器官毒性-反复接触 类别1",
+                pictogram: "🔥 火焰 | ☠️ 健康危害 | 环境毒害"
+            },
+            safety: {
+                sPhrases: "S53: 避免接触 — 使用前获得专门指示；S45: 发生事故或不适，立即就医；S61: 避免释放到环境中"
+            },
+            regulation: {
+                dangerousChemical: { is: true, desc: "重点监管危化品，高度致癌" },
+                easyDrug: { is: false, desc: "未被列入易制毒化学品目录" },
+                easyExplosive: { is: false, desc: "不易制爆，但属易燃液体" }
+            }
+        }
+        // ===== 可在此处继续添加更多化学品记录（完全相同的字段结构）=====
+        // 例如添加更多示例以满足"几百条"扩展，用户后续可自行追加。
+    ];
+
+    // 辅助函数：精确匹配（支持中文名完全匹配，英文名忽略大小写完全匹配，CAS完全匹配）
+    function findChemicalByInput(inputStr) {
+        if (!inputStr || inputStr.trim() === "") return null;
+        const query = inputStr.trim();
+        
+        for (let chem of chemicalsData) {
+            // 中文名完全匹配（精确）
+            if (chem.basic.chineseName === query) {
+                return chem;
+            }
+            // 英文名忽略大小写精确匹配
+            if (chem.basic.englishName.toLowerCase() === query.toLowerCase()) {
+                return chem;
+            }
+            // CAS号完全匹配 (包括字母/短横，精确)
+            if (chem.basic.cas === query) {
+                return chem;
+            }
+        }
+        return null;
+    }
+
+    // 渲染化学品卡片 (五大分块)
+    function renderChemicalCard(chemical) {
+        if (!chemical) return "";
+        
+        // 基本信息渲染
+        const basicHtml = `
+            <div class="card">
+                <div class="card-header"><h3>📋 基本信息</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">中文名</div><div class="info-value">${escapeHtml(chemical.basic.chineseName)}</div></div>
+                    <div class="info-row"><div class="info-label">英文名</div><div class="info-value">${escapeHtml(chemical.basic.englishName)}</div></div>
+                    <div class="info-row"><div class="info-label">CAS号</div><div class="info-value">${escapeHtml(chemical.basic.cas)}</div></div>
+                    <div class="info-row"><div class="info-label">分子式</div><div class="info-value">${escapeHtml(chemical.basic.molecularFormula)}</div></div>
+                    <div class="info-row"><div class="info-label">分子量</div><div class="info-value">${escapeHtml(chemical.basic.molecularWeight)}</div></div>
+                </div>
+            </div>
+        `;
+        
+        // 物理化学性质卡片
+        const physChemHtml = `
+            <div class="card">
+                <div class="card-header"><h3>⚗️ 物理化学性质</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">熔点</div><div class="info-value">${escapeHtml(chemical.physChem.meltingPoint || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">沸点</div><div class="info-value">${escapeHtml(chemical.physChem.boilingPoint || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">密度</div><div class="info-value">${escapeHtml(chemical.physChem.density || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">闪点</div><div class="info-value">${escapeHtml(chemical.physChem.flashPoint || "无数据")}</div></div>
+                </div>
+            </div>
+        `;
+        
+        // 危险性分类卡片
+        const hazardHtml = `
+            <div class="card">
+                <div class="card-header"><h3>⚠️ 危险性分类</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">GHS危险类别</div><div class="info-value">${escapeHtml(chemical.hazard.ghsCategory || "未提供")}</div></div>
+                    <div class="info-row"><div class="info-label">危险象形图</div><div class="info-value">${escapeHtml(chemical.hazard.pictogram || "无")}</div></div>
+                </div>
+            </div>
+        `;
+        
+        // 安全术语卡片 (S-phrases)
+        const safetyHtml = `
+            <div class="card">
+                <div class="card-header"><h3>🛡️ 安全术语 (S-phrases)</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">S-短语</div><div class="info-value">${escapeHtml(chemical.safety.sPhrases || "未提供")}</div></div>
+                </div>
+            </div>
+        `;
+        
+        // 法规信息卡片：危化品、易制毒、易制爆 (每个都含“是/否+说明”)
+        const reg = chemical.regulation;
+        const dangerousHtml = `
+            <div class="reg-item">
+                <div class="reg-title">📌 危险化学品</div>
+                <div>
+                    <span class="${reg.dangerousChemical.is ? 'badge-yes' : 'badge-no'}">${reg.dangerousChemical.is ? "是" : "否"}</span>
+                    <span class="reg-desc">${escapeHtml(reg.dangerousChemical.desc)}</span>
+                </div>
+            </div>
+        `;
+        const easyDrugHtml = `
+            <div class="reg-item">
+                <div class="reg-title">🧪 易制毒化学品</div>
+                <div>
+                    <span class="${reg.easyDrug.is ? 'badge-yes' : 'badge-no'}">${reg.easyDrug.is ? "是" : "否"}</span>
+                    <span class="reg-desc">${escapeHtml(reg.easyDrug.desc)}</span>
+                </div>
+            </div>
+        `;
+        const easyExplosiveHtml = `
+            <div class="reg-item">
+                <div class="reg-title">💥 易制爆化学品</div>
+                <div>
+                    <span class="${reg.easyExplosive.is ? 'badge-yes' : 'badge-no'}">${reg.easyExplosive.is ? "是" : "否"}</span>
+                    <span class="reg-desc">${escapeHtml(reg.easyExplosive.desc)}</span>
+                </div>
+            </div>
+        `;
+        
+        const regulationHtml = `
+            <div class="card">
+                <div class="card-header"><h3>📜 法规信息</h3></div>
+                <div class="card-content">
+                    ${dangerousHtml}
+                    ${easyDrugHtml}
+                    ${easyExplosiveHtml}
+                </div>
+            </div>
+        `;
+        
+        return basicHtml + physChemHtml + hazardHtml + safetyHtml + regulationHtml;
+    }
+    
+    // 简单防XSS工具（因为数据安全硬编码，但为了健壮）
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    // 显示错误或未找到信息
+    function showNotFoundMessage(query) {
+        const container = document.getElementById("resultContainer");
+        container.innerHTML = `
+            <div class="error-message">
+                ❌ 未找到化学品 "${escapeHtml(query)}" <br>
+                请检查中文名、英文名或CAS号是否输入准确（精确匹配）。
+            </div>
+            <div class="empty-state">
+                📖 提示: 可使用完整名称查询<br>示例: 甲醇 / Methanol / 67-56-1
+            </div>
+        `;
+    }
+    
+    // 主查询逻辑
+    function performSearch() {
+        const inputEl = document.getElementById("chemicalInput");
+        const query = inputEl.value.trim();
+        if (query === "") {
+            // 空输入友好提醒但不报错，展示默认提示
+            const container = document.getElementById("resultContainer");
+            container.innerHTML = `
+                <div class="empty-state">
+                    🔍 请输入化学品中文名/英文名/CAS号进行查询
+                </div>
+            `;
+            return;
+        }
+        
+        const matchedChem = findChemicalByInput(query);
+        const container = document.getElementById("resultContainer");
+        
+        if (matchedChem) {
+            // 渲染卡片
+            const cardsHtml = renderChemicalCard(matchedChem);
+            container.innerHTML = cardsHtml;
+            // 滚动平滑到结果区域
+            container.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+            showNotFoundMessage(query);
+        }
+    }
+    
+    // 绑定事件 + 键盘支持
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchBtn = document.getElementById("searchBtn");
+        const inputField = document.getElementById("chemicalInput");
+        
+        searchBtn.addEventListener("click", performSearch);
+        inputField.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+        
+        // 可选初始占位: 默认不自动查询，保持占位提示即可
+        // 保证加载完成时显示友好占位 (已经存在空状态，不做额外动作)
+        
+        // 如果URL带有演示?demo 可以展示第一条？但无需额外，完全按用户交互
+    });
+    
+    // 为了方便维护，控制台输出数据结构说明 (无实际影响)
+    console.log("化学品库已加载，当前记录数: " + chemicalsData.length + "，支持中文/英文/CAS精确匹配");
+</script>
+</body>
+</html>

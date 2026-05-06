@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>化学品信息查询助手</title>
+    <title>化学品信息查询助手 · 模糊匹配</title>
     <style>
         * {
             margin: 0;
@@ -21,13 +19,11 @@
             color: #1e2a3e;
         }
 
-        /* 主容器 */
         .container {
             max-width: 600px;
             margin: 0 auto;
         }
 
-        /* 头部标题 */
         .header {
             text-align: center;
             margin-bottom: 24px;
@@ -39,7 +35,6 @@
             background-clip: text;
             -webkit-background-clip: text;
             color: transparent;
-            letter-spacing: -0.3px;
         }
         .header p {
             font-size: 14px;
@@ -47,14 +42,12 @@
             margin-top: 6px;
         }
 
-        /* 搜索卡片 */
         .search-card {
             background: #ffffff;
             border-radius: 28px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
             padding: 20px 18px;
             margin-bottom: 24px;
-            transition: all 0.2s;
         }
         .input-group {
             display: flex;
@@ -71,8 +64,6 @@
             background-color: #fefefe;
             transition: 0.2s;
             outline: none;
-            font-family: inherit;
-            color: #0f172a;
         }
         .search-input:focus {
             border-color: #289672;
@@ -88,8 +79,6 @@
             color: white;
             cursor: pointer;
             transition: 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            font-family: inherit;
         }
         .search-btn:active {
             background: #0e5544;
@@ -101,25 +90,20 @@
             margin-top: 12px;
             text-align: center;
             background: #f1f5f9;
-            display: inline-block;
-            width: 100%;
             padding: 8px;
             border-radius: 30px;
         }
 
-        /* 结果区域 */
         .result-area {
             margin-top: 8px;
         }
 
-        /* 卡片通用样式 */
         .card {
             background: white;
             border-radius: 24px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             overflow: hidden;
-            transition: transform 0.1s;
         }
         .card-header {
             background: #f8fafc;
@@ -161,7 +145,6 @@
             color: #0f172a;
             word-break: break-word;
         }
-        /* 法规信息内部子项样式，类似info-row但简洁重排 */
         .reg-item {
             margin-bottom: 12px;
             padding-bottom: 6px;
@@ -169,8 +152,6 @@
         }
         .reg-item:last-child {
             border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
         }
         .reg-title {
             font-weight: 600;
@@ -185,7 +166,6 @@
             padding: 6px 10px;
             border-radius: 14px;
             display: inline-block;
-            width: auto;
         }
         .badge-yes {
             background: #fee2e2;
@@ -213,7 +193,6 @@
             padding: 48px 24px;
             text-align: center;
             color: #7c8ba0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
             font-size: 15px;
         }
         .error-message {
@@ -233,245 +212,3218 @@
             padding-top: 12px;
             border-top: 1px solid #e2edf2;
         }
+        .result-header {
+            background: #eef2ff;
+            padding: 8px 16px;
+            border-radius: 40px;
+            display: inline-block;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #1e6f5c;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>🧪 化学品信息助手</h1>
-        <p>输入中文名 / 英文名 / CAS号 · 精确查询</p>
+        <p>支持中文/英文/CAS 模糊匹配 · 最多显示50条</p>
     </div>
 
     <div class="search-card">
         <div class="input-group">
-            <input type="text" id="chemicalInput" class="search-input" placeholder="例: 甲醇 / Methanol / 67-56-1" autocomplete="off">
+            <input type="text" id="chemicalInput" class="search-input" placeholder="例: 甲醇 / 67 / acid" autocomplete="off">
             <button id="searchBtn" class="search-btn">查询</button>
         </div>
         <div class="hint">
-            💡 支持精确匹配：化学品中文名、英文名或CAS号完全一致
+            💡 模糊查找：名称或CAS号包含关键字即可（如“甲醇”可匹配“甲醇”和“苯甲醇”）
         </div>
     </div>
 
     <div id="resultContainer" class="result-area">
-        <!-- 动态卡片将渲染在此 -->
-        <div class="empty-state">
-            🔍 请输入化学品名称或CAS号，点击查询<br>将展示详细的5类信息卡片
-        </div>
+        <div class="empty-state">🔍 请输入化学品名称、CAS号或英文名进行查询</div>
     </div>
-    <footer>数据基于标准化学品库 · 仅供查询参考</footer>
+    <footer>数据基于权威MSDS · 持续更新中</footer>
 </div>
 
 <script>
-    // ======================== 化学品数据集 (硬编码示例，共3条，可扩展至数百条) ========================
-    // 每条记录包含5大模块: 基本信息、物理化学性质、危险性分类、安全术语、法规信息
+    // ======================== 化学品数据库（每条记录结构完整） ========================
     const chemicalsData = [
-        {
-            // 甲醇 Methanol
-            basic: {
-                chineseName: "甲醇",
-                englishName: "Methanol",
-                cas: "67-56-1",
-                molecularFormula: "CH₄O",
-                molecularWeight: "32.04 g/mol"
-            },
-            physChem: {
-                meltingPoint: "-97.6 °C",
-                boilingPoint: "64.7 °C",
-                density: "0.791 g/cm³ (20°C)",
-                flashPoint: "12 °C (闭杯)"
-            },
-            hazard: {
-                ghsCategory: "易燃液体 类别2；急性毒性(经口) 类别3*；特异性靶器官毒性-单次接触 类别1",
-                pictogram: "🔥 火焰 | 💀 健康危险"
-            },
-            safety: {
-                sPhrases: "S7: 保持容器密闭；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S45: 发生事故或不适，立即就医"
-            },
-            regulation: {
-                dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃有毒" },
-                easyDrug: { is: true, desc: "属于易制毒化学品（第三类），需备案管理" },
-                easyExplosive: { is: false, desc: "未列入易制爆危险化学品名录" }
-            }
-        },
-        {
-            // 丙酮 Acetone
-            basic: {
-                chineseName: "丙酮",
-                englishName: "Acetone",
-                cas: "67-64-1",
-                molecularFormula: "C₃H₆O",
-                molecularWeight: "58.08 g/mol"
-            },
-            physChem: {
-                meltingPoint: "-94.9 °C",
-                boilingPoint: "56.2 °C",
-                density: "0.7845 g/cm³",
-                flashPoint: "-20 °C"
-            },
-            hazard: {
-                ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；特异性靶器官毒性-单次接触 类别3",
-                pictogram: "🔥 火焰 | ⚠️ 感叹号"
-            },
-            safety: {
-                sPhrases: "S9: 保持容器在通风良好处；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
-            },
-            regulation: {
-                dangerousChemical: { is: true, desc: "危险化学品 (高度易燃)" },
-                easyDrug: { is: true, desc: "列入易制毒化学品名录 (第三类)，受管制" },
-                easyExplosive: { is: false, desc: "不属于易制爆化学品" }
-            }
-        },
-        {
-            // 苯 Benzene
-            basic: {
-                chineseName: "苯",
-                englishName: "Benzene",
-                cas: "71-43-2",
-                molecularFormula: "C₆H₆",
-                molecularWeight: "78.11 g/mol"
-            },
-            physChem: {
-                meltingPoint: "5.5 °C",
-                boilingPoint: "80.1 °C",
-                density: "0.8765 g/cm³",
-                flashPoint: "-11 °C"
-            },
-            hazard: {
-                ghsCategory: "易燃液体 类别2；致癌性 类别1A；生殖细胞致突变性 类别1B；特异性靶器官毒性-反复接触 类别1",
-                pictogram: "🔥 火焰 | ☠️ 健康危害 | 环境毒害"
-            },
-            safety: {
-                sPhrases: "S53: 避免接触 — 使用前获得专门指示；S45: 发生事故或不适，立即就医；S61: 避免释放到环境中"
-            },
-            regulation: {
-                dangerousChemical: { is: true, desc: "重点监管危化品，高度致癌" },
-                easyDrug: { is: false, desc: "未被列入易制毒化学品目录" },
-                easyExplosive: { is: false, desc: "不易制爆，但属易燃液体" }
-            }
-        }
-        // ===== 可在此处继续添加更多化学品记录（完全相同的字段结构）=====
-        // 例如添加更多示例以满足"几百条"扩展，用户后续可自行追加。
+             {
+      // N,N-二甲基甲酰胺(DMF)
+      basic: {
+        chineseName: "N,N-二甲基甲酰胺",
+        englishName: "N,N-Dimethylformamide",
+        cas: "68-12-2",
+        molecularFormula: "C₃H₇NO",
+        molecularWeight: "73.10 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-61 °C",
+        boilingPoint: "152.8 °C",
+        density: "0.94 g/cm³",
+        flashPoint: "58 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4；生殖毒性 类别1B",
+        pictogram: "🔥 火焰 | 💀 健康危险"
+      },
+      safety: {
+        sPhrases: "S36: 穿戴适当的防护服；S45: 发生事故或不适，立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲酸
+      basic: {
+        chineseName: "甲酸",
+        englishName: "Formic acid",
+        cas: "64-18-6",
+        molecularFormula: "CH₂O₂",
+        molecularWeight: "46.03 g/mol"
+      },
+      physChem: {
+        meltingPoint: "8.2 °C",
+        boilingPoint: "100.8 °C",
+        density: "1.22 g/cm³",
+        flashPoint: "69 °C"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S23: 不要吸入蒸气；S26: 眼睛接触后立即用大量水冲洗；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硫酸
+      basic: {
+        chineseName: "硫酸",
+        englishName: "Sulfuric acid",
+        cas: "7664-93-9",
+        molecularFormula: "H₂SO₄",
+        molecularWeight: "98.08 g/mol"
+      },
+      physChem: {
+        meltingPoint: "10.5 °C",
+        boilingPoint: "330.0 °C",
+        density: "1.83 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S30: 切勿加水；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强腐蚀性，易制毒" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水乙醚
+      basic: {
+        chineseName: "无水乙醚",
+        englishName: "Diethyl ether",
+        cas: "60-29-7",
+        molecularFormula: "C₄H₁₀O",
+        molecularWeight: "74.12 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-116.2 °C",
+        boilingPoint: "34.6 °C",
+        density: "0.71 g/cm³",
+        flashPoint: "-45 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别1；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S9: 保持容器在通风良好处；S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第二类）" },
+        easyExplosive: { is: false, desc: "不属易制爆，但易生成过氧化物爆炸物" }
+      }
+    },
+    {
+      // 盐酸
+      basic: {
+        chineseName: "盐酸",
+        englishName: "Hydrochloric acid",
+        cas: "7647-01-0",
+        molecularFormula: "HCl",
+        molecularWeight: "36.46 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-114.8 °C(纯)",
+        boilingPoint: "108.6 °C(20%)",
+        density: "1.20 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1B；严重眼损伤 类别1；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36: 穿戴适当的防护服；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强腐蚀性" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氨水
+      basic: {
+        chineseName: "氨水",
+        englishName: "Ammonium hydroxide",
+        cas: "1336-21-6",
+        molecularFormula: "NH₃·H₂O",
+        molecularWeight: "35.05 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-77.73 °C",
+        boilingPoint: "37.7 °C(25%)",
+        density: "0.91 g/cm³(25%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1B；严重眼损伤 类别1；急性毒性-吸入 类别3；水生环境危害 类别1",
+        pictogram: "☣️ 腐蚀 | 💀 健康危险 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，腐蚀性，有刺激性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 四氯乙烯
+      basic: {
+        chineseName: "四氯乙烯",
+        englishName: "Tetrachloroethylene",
+        cas: "127-18-4",
+        molecularFormula: "C₂Cl₄",
+        molecularWeight: "165.82 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-22 °C",
+        boilingPoint: "121 °C",
+        density: "1.62 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "致癌性 类别2；皮肤刺激 类别2；眼刺激 类别2；急性毒性 类别4",
+        pictogram: "🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S23: 不要吸入蒸气；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，可能致癌" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // L-组氨酸盐酸盐一水物
+      basic: {
+        chineseName: "L-组氨酸盐酸盐一水物",
+        englishName: "L-Histidine monohydrochloride monohydrate",
+        cas: "5934-29-2",
+        molecularFormula: "C₆H₉N₃O₂·HCl·H₂O",
+        molecularWeight: "209.63 g/mol"
+      },
+      physChem: {
+        meltingPoint: "~254 °C (分解)",
+        boilingPoint: "无数据",
+        density: "1.48 g/cm³",
+        flashPoint: "不适用"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S22: 不要吸入粉尘；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》，为氨基酸衍生物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氯化锌
+      basic: {
+        chineseName: "氯化锌",
+        englishName: "Zinc chloride",
+        cas: "7646-85-7",
+        molecularFormula: "ZnCl₂",
+        molecularWeight: "136.30 g/mol"
+      },
+      physChem: {
+        meltingPoint: "290 °C",
+        boilingPoint: "732 °C",
+        density: "2.91 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1B；严重眼损伤 类别1；急性毒性-口服 类别4；水生环境危害 类别1",
+        pictogram: "☣️ 腐蚀 | 💀 健康危险 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氢氧化钙
+      basic: {
+        chineseName: "氢氧化钙",
+        englishName: "Calcium hydroxide",
+        cas: "1305-62-0",
+        molecularFormula: "Ca(OH)₂",
+        molecularWeight: "74.09 g/mol"
+      },
+      physChem: {
+        meltingPoint: "580 °C (分解)",
+        boilingPoint: "2850 °C",
+        density: "2.24 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤刺激 类别2；严重眼损伤 类别1；特定靶器官毒性-单次接触 类别3",
+        pictogram: "☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二水合磷酸二氢钠
+      basic: {
+        chineseName: "二水合磷酸二氢钠",
+        englishName: "Sodium dihydrogen phosphate dihydrate",
+        cas: "13472-35-0",
+        molecularFormula: "NaH₂PO₄·2H₂O",
+        molecularWeight: "156.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "60 °C (失水)",
+        boilingPoint: "100 °C (分解)",
+        density: "1.91 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二氯甲烷
+      basic: {
+        chineseName: "二氯甲烷",
+        englishName: "Dichloromethane",
+        cas: "75-09-2",
+        molecularFormula: "CH₂Cl₂",
+        molecularWeight: "84.93 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-96.7 °C",
+        boilingPoint: "39.6 °C",
+        density: "1.33 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "致癌性 类别2；皮肤刺激 类别2；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S23: 不要吸入蒸气；S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，可疑致癌物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 丙酮
+      basic: {
+        chineseName: "丙酮",
+        englishName: "Acetone",
+        cas: "67-64-1",
+        molecularFormula: "C₃H₆O",
+        molecularWeight: "58.08 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-94.9 °C",
+        boilingPoint: "56.2 °C",
+        density: "0.7845 g/cm³",
+        flashPoint: "-20 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S9: 保持容器在通风良好处；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，高度易燃" },
+        easyDrug: { is: true, desc: "列入易制毒化学品名录 (第三类)" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 司班80（失水山梨醇单油酸酯）
+      basic: {
+        chineseName: "司班80",
+        englishName: "Span 80",
+        cas: "1338-43-8",
+        molecularFormula: "C₂₄H₄₄O₆",
+        molecularWeight: "428.60 g/mol"
+      },
+      physChem: {
+        meltingPoint: "10-12 °C",
+        boilingPoint: ">100 °C",
+        density: "0.99 g/cm³",
+        flashPoint: ">100 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "非危险化学品" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水乙醇
+      basic: {
+        chineseName: "无水乙醇",
+        englishName: "Ethanol absolute",
+        cas: "64-17-5",
+        molecularFormula: "C₂H₅OH",
+        molecularWeight: "46.07 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-114.1 °C",
+        boilingPoint: "78.3 °C",
+        density: "0.789 g/cm³",
+        flashPoint: "13 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S7: 保持容器密闭；S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品（乙醇溶液需管制）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氯化钠
+      basic: {
+        chineseName: "氯化钠",
+        englishName: "Sodium chloride",
+        cas: "7647-14-5",
+        molecularFormula: "NaCl",
+        molecularWeight: "58.44 g/mol"
+      },
+      physChem: {
+        meltingPoint: "801 °C",
+        boilingPoint: "1465 °C",
+        density: "2.16 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氯苯
+      basic: {
+        chineseName: "氯苯",
+        englishName: "Chlorobenzene",
+        cas: "108-90-7",
+        molecularFormula: "C₆H₅Cl",
+        molecularWeight: "112.56 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-45 °C",
+        boilingPoint: "132 °C",
+        density: "1.11 g/cm³",
+        flashPoint: "29 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4；皮肤刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲醇
+      basic: {
+        chineseName: "甲醇",
+        englishName: "Methanol",
+        cas: "67-56-1",
+        molecularFormula: "CH₄O",
+        molecularWeight: "32.04 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-98 °C",
+        boilingPoint: "64.7 °C",
+        density: "0.791 g/cm³(20°C)",
+        flashPoint: "12 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；急性毒性(经口) 类别3*；特异性靶器官毒性-单次接触 类别1",
+        pictogram: "🔥 火焰 | 💀 健康危险"
+      },
+      safety: {
+        sPhrases: "S7: 保持容器密闭；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S45: 发生事故或不适立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃有毒" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "未列入易制爆危险化学品名录" }
+      }
+    },
+    {
+      // 无水乙酸钠
+      basic: {
+        chineseName: "无水乙酸钠",
+        englishName: "Sodium acetate anhydrous",
+        cas: "127-09-3",
+        molecularFormula: "CH₃COONa",
+        molecularWeight: "82.03 g/mol"
+      },
+      physChem: {
+        meltingPoint: "324 °C",
+        boilingPoint: ">400 °C",
+        density: "1.53 g/cm³",
+        flashPoint: ">250 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 环己酮
+      basic: {
+        chineseName: "环己酮",
+        englishName: "Cyclohexanone",
+        cas: "108-94-1",
+        molecularFormula: "C₆H₁₀O",
+        molecularWeight: "98.15 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-47 °C",
+        boilingPoint: "155.6 °C",
+        density: "0.95 g/cm³",
+        flashPoint: "44 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 十二水合磷酸氢二钠
+      basic: {
+        chineseName: "十二水合磷酸氢二钠",
+        englishName: "Disodium hydrogen phosphate dodecahydrate",
+        cas: "10039-32-4",
+        molecularFormula: "Na₂HPO₄·12H₂O",
+        molecularWeight: "358.14 g/mol"
+      },
+      physChem: {
+        meltingPoint: "35 °C (失水)",
+        boilingPoint: "100 °C (分解)",
+        density: "1.52 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 四氢呋喃
+      basic: {
+        chineseName: "四氢呋喃",
+        englishName: "Tetrahydrofuran",
+        cas: "109-99-9",
+        molecularFormula: "C₄H₈O",
+        molecularWeight: "72.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-108.4 °C",
+        boilingPoint: "66 °C",
+        density: "0.89 g/cm³",
+        flashPoint: "-14 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；致癌性 类别2",
+        pictogram: "🔥 火焰 | 🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃，易形成过氧化物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氢氧化钠
+      basic: {
+        chineseName: "氢氧化钠",
+        englishName: "Sodium hydroxide",
+        cas: "1310-73-2",
+        molecularFormula: "NaOH",
+        molecularWeight: "40.00 g/mol"
+      },
+      physChem: {
+        meltingPoint: "318 °C",
+        boilingPoint: "1388 °C",
+        density: "2.13 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水氯化钙
+      basic: {
+        chineseName: "无水氯化钙",
+        englishName: "Calcium chloride anhydrous",
+        cas: "10043-52-4",
+        molecularFormula: "CaCl₂",
+        molecularWeight: "110.98 g/mol"
+      },
+      physChem: {
+        meltingPoint: "772 °C",
+        boilingPoint: "1935 °C",
+        density: "2.15 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2；皮肤刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 异丙醇
+      basic: {
+        chineseName: "异丙醇",
+        englishName: "Isopropyl alcohol",
+        cas: "67-63-0",
+        molecularFormula: "C₃H₈O",
+        molecularWeight: "60.10 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-89.5 °C",
+        boilingPoint: "82.5 °C",
+        density: "0.785 g/cm³",
+        flashPoint: "12 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S7: 保持容器密闭；S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 一水柠檬酸
+      basic: {
+        chineseName: "一水柠檬酸",
+        englishName: "Citric acid monohydrate",
+        cas: "5949-29-1",
+        molecularFormula: "C₆H₈O₇·H₂O",
+        molecularWeight: "210.14 g/mol"
+      },
+      physChem: {
+        meltingPoint: "153 °C (分解)",
+        boilingPoint: "无",
+        density: "1.54 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三氯甲烷（氯仿）
+      basic: {
+        chineseName: "三氯甲烷",
+        englishName: "Trichloromethane",
+        cas: "67-66-3",
+        molecularFormula: "CHCl₃",
+        molecularWeight: "119.38 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-63.5 °C",
+        boilingPoint: "61.2 °C",
+        density: "1.48 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤刺激 类别2；严重眼刺激 类别2；致癌性 类别2",
+        pictogram: "💀 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三氯乙酸
+      basic: {
+        chineseName: "三氯乙酸",
+        englishName: "Trichloroacetic acid",
+        cas: "76-03-9",
+        molecularFormula: "C₂HCl₃O₂",
+        molecularWeight: "163.39 g/mol"
+      },
+      physChem: {
+        meltingPoint: "57.5 °C",
+        boilingPoint: "196 °C",
+        density: "1.63 g/cm³",
+        flashPoint: ">100 °C"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1A；严重眼损伤 类别1；急性毒性 类别4；水生环境危害 类别3",
+        pictogram: "☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 冰乙酸（冰醋酸）
+      basic: {
+        chineseName: "冰乙酸",
+        englishName: "Acetic acid glacial",
+        cas: "64-19-7",
+        molecularFormula: "CH₃COOH",
+        molecularWeight: "60.05 g/mol"
+      },
+      physChem: {
+        meltingPoint: "16.6 °C",
+        boilingPoint: "117.9 °C",
+        density: "1.05 g/cm³",
+        flashPoint: "39 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "🔥 火焰 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S23: 不要吸入蒸气；S26: 眼睛接触后立即用大量水冲洗；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃、腐蚀性" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // DL-天冬氨酸
+      basic: {
+        chineseName: "DL-天冬氨酸",
+        englishName: "DL-Aspartic acid",
+        cas: "617-45-8",
+        molecularFormula: "C₄H₇NO₄",
+        molecularWeight: "133.10 g/mol"
+      },
+      physChem: {
+        meltingPoint: "~270 °C (分解)",
+        boilingPoint: "无",
+        density: "1.66 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二甲基乙酰胺(DMAC)
+      basic: {
+        chineseName: "二甲基乙酰胺",
+        englishName: "Dimethylacetamide",
+        cas: "127-19-5",
+        molecularFormula: "C₄H₉NO",
+        molecularWeight: "87.12 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-20 °C",
+        boilingPoint: "165.1 °C",
+        density: "0.94 g/cm³",
+        flashPoint: "70 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别4；生殖毒性 类别1B",
+        pictogram: "💀 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，生殖毒性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 连二亚硫酸钠（保险粉）
+      basic: {
+        chineseName: "连二亚硫酸钠",
+        englishName: "Sodium dithionite",
+        cas: "7775-14-6",
+        molecularFormula: "Na₂S₂O₄",
+        molecularWeight: "174.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "52 °C (分解)",
+        boilingPoint: "无",
+        density: "1.58 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "自热物质 类别1；遇水放出易燃气体 类别2；急性毒性 类别4",
+        pictogram: "🔥 火焰 | 💀 健康危险"
+      },
+      safety: {
+        sPhrases: "S22: 不要吸入粉尘；S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，自热、遇湿易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三水合乙酸钠
+      basic: {
+        chineseName: "三水合乙酸钠",
+        englishName: "Sodium acetate trihydrate",
+        cas: "6131-90-4",
+        molecularFormula: "CH₃COONa·3H₂O",
+        molecularWeight: "136.08 g/mol"
+      },
+      physChem: {
+        meltingPoint: "58 °C",
+        boilingPoint: ">400 °C",
+        density: "1.45 g/cm³",
+        flashPoint: ">250 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 十四烷
+      basic: {
+        chineseName: "十四烷",
+        englishName: "Tetradecane",
+        cas: "629-59-4",
+        molecularFormula: "C₁₄H₃₀",
+        molecularWeight: "198.39 g/mol"
+      },
+      physChem: {
+        meltingPoint: "5.9 °C",
+        boilingPoint: "253.5 °C",
+        density: "0.765 g/cm³",
+        flashPoint: "99 °C"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀/刺激 类别2；吸入危害 类别1；水生环境危害 类别1",
+        pictogram: "⚠️ 惊叹号 | 💀 健康危险 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S62: 如不慎吞咽，不要催吐，立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 乳酸
+      basic: {
+        chineseName: "乳酸",
+        englishName: "Lactic acid",
+        cas: "50-21-5",
+        molecularFormula: "C₃H₆O₃",
+        molecularWeight: "90.08 g/mol"
+      },
+      physChem: {
+        meltingPoint: "16.8 °C",
+        boilingPoint: "122 °C",
+        density: "1.21 g/cm³",
+        flashPoint: ">110 °C"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别1；皮肤刺激 类别2",
+        pictogram: "☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硫氰酸钾
+      basic: {
+        chineseName: "硫氰酸钾",
+        englishName: "Potassium thiocyanate",
+        cas: "333-20-0",
+        molecularFormula: "KSCN",
+        molecularWeight: "97.18 g/mol"
+      },
+      physChem: {
+        meltingPoint: "173 °C",
+        boilingPoint: "500 °C (分解)",
+        density: "1.89 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别4",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 磷酸氢二钾
+      basic: {
+        chineseName: "磷酸氢二钾",
+        englishName: "Dipotassium hydrogen phosphate",
+        cas: "7758-11-4",
+        molecularFormula: "K₂HPO₄",
+        molecularWeight: "174.18 g/mol"
+      },
+      physChem: {
+        meltingPoint: "340 °C",
+        boilingPoint: "无",
+        density: "2.44 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 乙酸乙酯
+      basic: {
+        chineseName: "乙酸乙酯",
+        englishName: "Ethyl acetate",
+        cas: "141-78-6",
+        molecularFormula: "C₄H₈O₂",
+        molecularWeight: "88.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-83.6 °C",
+        boilingPoint: "77.1 °C",
+        density: "0.90 g/cm³",
+        flashPoint: "-4 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；特异性靶器官毒性-单次接触 类别3",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 四氯乙烷（1,1,2,2-四氯乙烷）
+      basic: {
+        chineseName: "四氯乙烷",
+        englishName: "Tetrachloroethane",
+        cas: "79-34-5",
+        molecularFormula: "C₂H₂Cl₄",
+        molecularWeight: "167.85 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-43.8 °C",
+        boilingPoint: "146.5 °C",
+        density: "1.60 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别2；皮肤刺激 类别2；严重眼刺激 类别2；致癌性 类别2",
+        pictogram: "💀 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，高毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 邻二甲苯
+      basic: {
+        chineseName: "邻二甲苯",
+        englishName: "o-Xylene",
+        cas: "95-47-6",
+        molecularFormula: "C₈H₁₀",
+        molecularWeight: "106.17 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-25 °C",
+        boilingPoint: "144.4 °C",
+        density: "0.88 g/cm³",
+        flashPoint: "32 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4；皮肤刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二氧化硒
+      basic: {
+        chineseName: "二氧化硒",
+        englishName: "Selenium dioxide",
+        cas: "7446-08-4",
+        molecularFormula: "SeO₂",
+        molecularWeight: "110.96 g/mol"
+      },
+      physChem: {
+        meltingPoint: "340 °C (升华)",
+        boilingPoint: "无",
+        density: "3.95 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别2；皮肤腐蚀 类别1B；严重眼损伤 类别1；水生环境危害 类别1",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，高毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 次氯酸钠（溶液）
+      basic: {
+        chineseName: "次氯酸钠",
+        englishName: "Sodium hypochlorite",
+        cas: "7681-52-9",
+        molecularFormula: "NaClO",
+        molecularWeight: "74.44 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-6 °C (分解)",
+        boilingPoint: "40 °C (分解)",
+        density: "1.21 g/cm³(10%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1B；严重眼损伤 类别1；水生环境危害 类别1",
+        pictogram: "☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲基叔丁基醚
+      basic: {
+        chineseName: "甲基叔丁基醚",
+        englishName: "Methyl tert-butyl ether",
+        cas: "1634-04-4",
+        molecularFormula: "C₅H₁₂O",
+        molecularWeight: "88.15 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-109 °C",
+        boilingPoint: "55.2 °C",
+        density: "0.74 g/cm³",
+        flashPoint: "-10 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 1,4-二氧六环
+      basic: {
+        chineseName: "1,4-二氧六环",
+        englishName: "1,4-Dioxane",
+        cas: "123-91-1",
+        molecularFormula: "C₄H₈O₂",
+        molecularWeight: "88.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "11.8 °C",
+        boilingPoint: "101.1 °C",
+        density: "1.03 g/cm³",
+        flashPoint: "12 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；严重眼损伤/眼刺激 类别2；致癌性 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号 | 🎗️ 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S46: 如不慎吞咽，立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃，可疑致癌物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 4-氯苯酚
+      basic: {
+        chineseName: "4-氯苯酚",
+        englishName: "4-Chlorophenol",
+        cas: "106-48-9",
+        molecularFormula: "C₆H₅ClO",
+        molecularWeight: "128.56 g/mol"
+      },
+      physChem: {
+        meltingPoint: "43 °C",
+        boilingPoint: "220 °C",
+        density: "1.31 g/cm³",
+        flashPoint: "121 °C"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤腐蚀 类别1C；严重眼损伤 类别1；水生环境危害 类别1",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 磷酸二氢钾
+      basic: {
+        chineseName: "磷酸二氢钾",
+        englishName: "Potassium dihydrogen phosphate",
+        cas: "7778-77-0",
+        molecularFormula: "KH₂PO₄",
+        molecularWeight: "136.09 g/mol"
+      },
+      physChem: {
+        meltingPoint: "252.6 °C",
+        boilingPoint: "400 °C (分解)",
+        density: "2.34 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 磷酸二氢铵
+      basic: {
+        chineseName: "磷酸二氢铵",
+        englishName: "Ammonium dihydrogen phosphate",
+        cas: "7722-76-1",
+        molecularFormula: "NH₄H₂PO₄",
+        molecularWeight: "115.03 g/mol"
+      },
+      physChem: {
+        meltingPoint: "190 °C (分解)",
+        boilingPoint: "无",
+        density: "1.80 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氧化锌
+      basic: {
+        chineseName: "氧化锌",
+        englishName: "Zinc oxide",
+        cas: "1314-13-2",
+        molecularFormula: "ZnO",
+        molecularWeight: "81.38 g/mol"
+      },
+      physChem: {
+        meltingPoint: "1975 °C",
+        boilingPoint: "2360 °C",
+        density: "5.61 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "水生环境危害 类别1",
+        pictogram: "🌊 环境"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硝酸钠
+      basic: {
+        chineseName: "硝酸钠",
+        englishName: "Sodium nitrate",
+        cas: "7631-99-4",
+        molecularFormula: "NaNO₃",
+        molecularWeight: "84.99 g/mol"
+      },
+      physChem: {
+        meltingPoint: "307 °C",
+        boilingPoint: "380 °C (分解)",
+        density: "2.26 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性固体 类别3；严重眼损伤/眼刺激 类别2",
+        pictogram: "🔥 火焰（圆圈） | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，氧化剂" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: true, desc: "属于易制爆危险化学品" }
+      }
+    },
+    {
+      // 乙腈
+      basic: {
+        chineseName: "乙腈",
+        englishName: "Acetonitrile",
+        cas: "75-05-8",
+        molecularFormula: "CH₃CN",
+        molecularWeight: "41.05 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-45.7 °C",
+        boilingPoint: "81.6 °C",
+        density: "0.786 g/cm³",
+        flashPoint: "2 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；急性毒性 类别4；严重眼损伤/眼刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 丙三醇（甘油）
+      basic: {
+        chineseName: "丙三醇",
+        englishName: "Glycerol",
+        cas: "56-81-5",
+        molecularFormula: "C₃H₈O₃",
+        molecularWeight: "92.09 g/mol"
+      },
+      physChem: {
+        meltingPoint: "17.8 °C",
+        boilingPoint: "290 °C",
+        density: "1.26 g/cm³",
+        flashPoint: "160 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 双氧水（过氧化氢，30%）
+      basic: {
+        chineseName: "双氧水",
+        englishName: "Hydrogen peroxide",
+        cas: "7722-84-1",
+        molecularFormula: "H₂O₂",
+        molecularWeight: "34.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-0.43 °C(30%)",
+        boilingPoint: "107 °C(30%)",
+        density: "1.11 g/cm³(30%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性液体 类别2；皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "🔥 火焰（圆圈） | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，氧化性、腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 草酸铵
+      basic: {
+        chineseName: "草酸铵",
+        englishName: "Ammonium oxalate",
+        cas: "1113-38-8",
+        molecularFormula: "(NH₄)₂C₂O₄·H₂O",
+        molecularWeight: "142.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "70 °C (分解)",
+        boilingPoint: "无",
+        density: "1.50 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别4；严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硫酸钾
+      basic: {
+        chineseName: "硫酸钾",
+        englishName: "Potassium sulfate",
+        cas: "7778-80-5",
+        molecularFormula: "K₂SO₄",
+        molecularWeight: "174.26 g/mol"
+      },
+      physChem: {
+        meltingPoint: "1069 °C",
+        boilingPoint: "1689 °C",
+        density: "2.66 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 海藻酸钠
+      basic: {
+        chineseName: "海藻酸钠",
+        englishName: "Sodium alginate",
+        cas: "9005-38-3",
+        molecularFormula: "(C₆H₇O₆Na)ₙ",
+        molecularWeight: "约 10,000-600,000 (聚合物)",
+        density: "1.59 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 十二烷基磺酸钠
+      basic: {
+        chineseName: "十二烷基磺酸钠",
+        englishName: "Sodium dodecyl sulfonate",
+        cas: "2386-53-0",
+        molecularFormula: "C₁₂H₂₅SO₃Na",
+        molecularWeight: "272.38 g/mol"
+      },
+      physChem: {
+        meltingPoint: ">300 °C",
+        boilingPoint: "分解",
+        density: "1.03 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2；皮肤刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 液体石蜡
+      basic: {
+        chineseName: "液体石蜡",
+        englishName: "Liquid paraffin",
+        cas: "8012-95-1",
+        molecularFormula: "混合物（C₁₀-C₂₀烷烃）",
+        molecularWeight: "混合物",
+        density: "0.82-0.88 g/cm³",
+        flashPoint: ">130 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 高氯酸
+      basic: {
+        chineseName: "高氯酸",
+        englishName: "Perchloric acid",
+        cas: "7601-90-3",
+        molecularFormula: "HClO₄",
+        molecularWeight: "100.46 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-112 °C",
+        boilingPoint: "203 °C",
+        density: "1.76 g/cm³(60%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性液体 类别1；皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "🔥 火焰（圆圈） | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强氧化剂，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: true, desc: "属于易制爆危险化学品" }
+      }
+    },
+    {
+      // 正己烷
+      basic: {
+        chineseName: "正己烷",
+        englishName: "n-Hexane",
+        cas: "110-54-3",
+        molecularFormula: "C₆H₁₄",
+        molecularWeight: "86.18 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-95.3 °C",
+        boilingPoint: "68.7 °C",
+        density: "0.66 g/cm³",
+        flashPoint: "-22 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；皮肤刺激 类别2；生殖毒性 类别2；特异性靶器官毒性-反复接触 类别2",
+        pictogram: "🔥 火焰 | 🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S9: 保持容器在通风良好处；S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S29: 切勿排入下水道"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃，神经毒性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲苯
+      basic: {
+        chineseName: "甲苯",
+        englishName: "Toluene",
+        cas: "108-88-3",
+        molecularFormula: "C₇H₈",
+        molecularWeight: "92.14 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-95 °C",
+        boilingPoint: "110.6 °C",
+        density: "0.87 g/cm³",
+        flashPoint: "4 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；皮肤刺激 类别2；生殖毒性 类别2",
+        pictogram: "🔥 火焰 | 🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 四氯化碳
+      basic: {
+        chineseName: "四氯化碳",
+        englishName: "Carbon tetrachloride",
+        cas: "56-23-5",
+        molecularFormula: "CCl₄",
+        molecularWeight: "153.82 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-22.9 °C",
+        boilingPoint: "76.7 °C",
+        density: "1.59 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；特异性靶器官毒性-反复接触 类别1；皮肤刺激 类别2",
+        pictogram: "💀 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S23: 不要吸入蒸气；S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二甲亚砜(DMSO)
+      basic: {
+        chineseName: "二甲亚砜",
+        englishName: "Dimethyl sulfoxide",
+        cas: "67-68-5",
+        molecularFormula: "C₂H₆OS",
+        molecularWeight: "78.13 g/mol"
+      },
+      physChem: {
+        meltingPoint: "18.4 °C",
+        boilingPoint: "189 °C",
+        density: "1.10 g/cm³",
+        flashPoint: "95 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别4；严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 二甲苯（混合异构体）
+      basic: {
+        chineseName: "二甲苯",
+        englishName: "Xylene",
+        cas: "1330-20-7",
+        molecularFormula: "C₈H₁₀",
+        molecularWeight: "106.17 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-47.4 °C",
+        boilingPoint: "138-144 °C",
+        density: "0.86 g/cm³",
+        flashPoint: "25 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4；皮肤刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 胶棉液（火棉胶）
+      basic: {
+        chineseName: "胶棉液",
+        englishName: "Collodion",
+        cas: "9004-70-0",
+        molecularFormula: "硝化纤维素溶于乙醚/乙醇混合物",
+        molecularWeight: "混合物",
+        density: "0.76-0.80 g/cm³",
+        flashPoint: "约 -40 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别1；严重眼损伤/眼刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "干燥状态下易爆" }
+      }
+    },
+    {
+      // 重铬酸钾
+      basic: {
+        chineseName: "重铬酸钾",
+        englishName: "Potassium dichromate",
+        cas: "7778-50-9",
+        molecularFormula: "K₂Cr₂O₇",
+        molecularWeight: "294.18 g/mol"
+      },
+      physChem: {
+        meltingPoint: "398 °C",
+        boilingPoint: "500 °C (分解)",
+        density: "2.68 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性固体 类别2；急性毒性 类别2；皮肤腐蚀 类别1B；致癌性 类别1B；水生环境危害 类别1",
+        pictogram: "🔥 火焰（圆圈） | 💀 健康危险 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强氧化剂，致癌" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: true, desc: "属于易制爆危险化学品" }
+      }
+    },
+    {
+      // 碳酸钾
+      basic: {
+        chineseName: "碳酸钾",
+        englishName: "Potassium carbonate",
+        cas: "584-08-7",
+        molecularFormula: "K₂CO₃",
+        molecularWeight: "138.21 g/mol"
+      },
+      physChem: {
+        meltingPoint: "891 °C",
+        boilingPoint: "分解",
+        density: "2.43 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 苯甲酸钠
+      basic: {
+        chineseName: "苯甲酸钠",
+        englishName: "Sodium benzoate",
+        cas: "532-32-1",
+        molecularFormula: "C₆H₅COONa",
+        molecularWeight: "144.10 g/mol"
+      },
+      physChem: {
+        meltingPoint: ">300 °C",
+        boilingPoint: "分解",
+        density: "1.44 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水碳酸钠
+      basic: {
+        chineseName: "无水碳酸钠",
+        englishName: "Sodium carbonate anhydrous",
+        cas: "497-19-8",
+        molecularFormula: "Na₂CO₃",
+        molecularWeight: "105.99 g/mol"
+      },
+      physChem: {
+        meltingPoint: "851 °C",
+        boilingPoint: "1600 °C",
+        density: "2.54 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36: 穿戴适当的防护服"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 氧化羟胺（盐酸羟胺）
+      basic: {
+        chineseName: "氧化羟胺",
+        englishName: "Hydroxylamine hydrochloride",
+        cas: "5470-11-1",
+        molecularFormula: "NH₂OH·HCl",
+        molecularWeight: "69.49 g/mol"
+      },
+      physChem: {
+        meltingPoint: "155-157 °C (分解)",
+        boilingPoint: "无",
+        density: "1.67 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤腐蚀 类别1C；严重眼损伤 类别1；致癌性 类别2",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 十二烷基硫酸钠(SDS)
+      basic: {
+        chineseName: "十二烷基硫酸钠",
+        englishName: "Sodium dodecyl sulfate",
+        cas: "151-21-3",
+        molecularFormula: "C₁₂H₂₅SO₄Na",
+        molecularWeight: "288.38 g/mol"
+      },
+      physChem: {
+        meltingPoint: "206 °C",
+        boilingPoint: "分解",
+        density: "1.03 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别4；严重眼损伤/眼刺激 类别1；皮肤刺激 类别2",
+        pictogram: "⚠️ 惊叹号 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水硫酸钠
+      basic: {
+        chineseName: "无水硫酸钠",
+        englishName: "Sodium sulfate anhydrous",
+        cas: "7757-82-6",
+        molecularFormula: "Na₂SO₄",
+        molecularWeight: "142.04 g/mol"
+      },
+      physChem: {
+        meltingPoint: "884 °C",
+        boilingPoint: "1429 °C",
+        density: "2.66 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 环己烷
+      basic: {
+        chineseName: "环己烷",
+        englishName: "Cyclohexane",
+        cas: "110-82-7",
+        molecularFormula: "C₆H₁₂",
+        molecularWeight: "84.16 g/mol"
+      },
+      physChem: {
+        meltingPoint: "6.5 °C",
+        boilingPoint: "80.7 °C",
+        density: "0.78 g/cm³",
+        flashPoint: "-20 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；皮肤刺激 类别2；吸入危害 类别1",
+        pictogram: "🔥 火焰 | 💀 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S33: 采取静电预防措施"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 苯酚
+      basic: {
+        chineseName: "苯酚",
+        englishName: "Phenol",
+        cas: "108-95-2",
+        molecularFormula: "C₆H₅OH",
+        molecularWeight: "94.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "40.5 °C",
+        boilingPoint: "181.7 °C",
+        density: "1.07 g/cm³",
+        flashPoint: "79 °C"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤腐蚀 类别1B；严重眼损伤 类别1；致癌性 类别2",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲醛溶液（37%）
+      basic: {
+        chineseName: "甲醛溶液",
+        englishName: "Formaldehyde solution",
+        cas: "50-00-0",
+        molecularFormula: "CH₂O (气体) / HCHO",
+        molecularWeight: "30.03 g/mol",
+        density: "1.09 g/cm³(37%)",
+        flashPoint: "60 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别3；皮肤腐蚀 类别1B；致癌性 类别1B",
+        pictogram: "🔥 火焰 | 💀 健康危险 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，致癌，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三氯乙烯
+      basic: {
+        chineseName: "三氯乙烯",
+        englishName: "Trichloroethylene",
+        cas: "79-01-6",
+        molecularFormula: "C₂HCl₃",
+        molecularWeight: "131.39 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-84.7 °C",
+        boilingPoint: "87.2 °C",
+        density: "1.46 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "致癌性 类别1；皮肤刺激 类别2；严重眼刺激 类别2",
+        pictogram: "🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，可疑致癌物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 苯甲醇
+      basic: {
+        chineseName: "苯甲醇",
+        englishName: "Benzyl alcohol",
+        cas: "100-51-6",
+        molecularFormula: "C₆H₅CH₂OH",
+        molecularWeight: "108.14 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-15.3 °C",
+        boilingPoint: "205.3 °C",
+        density: "1.04 g/cm³",
+        flashPoint: "93 °C"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别4；严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 六甲基磷酰三胺(HMPT)
+      basic: {
+        chineseName: "六甲基磷酰三胺",
+        englishName: "Hexamethylphosphoramide",
+        cas: "680-31-9",
+        molecularFormula: "C₆H₁₈N₃OP",
+        molecularWeight: "179.20 g/mol"
+      },
+      physChem: {
+        meltingPoint: "7 °C",
+        boilingPoint: "232.5 °C",
+        density: "1.03 g/cm³",
+        flashPoint: "105 °C"
+      },
+      hazard: {
+        ghsCategory: "致癌性 类别1B；生殖毒性 类别2",
+        pictogram: "🎗️ 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，致癌" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 乳酸钠
+      basic: {
+        chineseName: "乳酸钠",
+        englishName: "Sodium lactate",
+        cas: "72-17-3",
+        molecularFormula: "C₃H₅O₃Na",
+        molecularWeight: "112.06 g/mol"
+      },
+      physChem: {
+        meltingPoint: "163-165 °C",
+        boilingPoint: "分解",
+        density: "1.33 g/cm³(50%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三氟乙酸
+      basic: {
+        chineseName: "三氟乙酸",
+        englishName: "Trifluoroacetic acid",
+        cas: "76-05-1",
+        molecularFormula: "CF₃COOH",
+        molecularWeight: "114.02 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-15.4 °C",
+        boilingPoint: "72.4 °C",
+        density: "1.48 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1B；严重眼损伤 类别1；急性毒性 类别4",
+        pictogram: "☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硝基苯
+      basic: {
+        chineseName: "硝基苯",
+        englishName: "Nitrobenzene",
+        cas: "98-95-3",
+        molecularFormula: "C₆H₅NO₂",
+        molecularWeight: "123.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "5.7 °C",
+        boilingPoint: "210.9 °C",
+        density: "1.20 g/cm³",
+        flashPoint: "88 °C"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤刺激 类别2；严重眼刺激 类别2；致癌性 类别2；水生环境危害 类别1",
+        pictogram: "💀 健康危险 | ⚠️ 惊叹号 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，高毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三乙胺
+      basic: {
+        chineseName: "三乙胺",
+        englishName: "Triethylamine",
+        cas: "121-44-8",
+        molecularFormula: "C₆H₁₅N",
+        molecularWeight: "101.19 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-115 °C",
+        boilingPoint: "89.3 °C",
+        density: "0.73 g/cm³",
+        flashPoint: "-15 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别2；急性毒性 类别4；皮肤腐蚀 类别1B",
+        pictogram: "🔥 火焰 | ☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，极易燃，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硝酸银
+      basic: {
+        chineseName: "硝酸银",
+        englishName: "Silver nitrate",
+        cas: "7761-88-8",
+        molecularFormula: "AgNO₃",
+        molecularWeight: "169.87 g/mol"
+      },
+      physChem: {
+        meltingPoint: "212 °C",
+        boilingPoint: "440 °C (分解)",
+        density: "4.35 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性固体 类别2；皮肤腐蚀 类别1B；严重眼损伤 类别1；水生环境危害 类别1",
+        pictogram: "🔥 火焰（圆圈） | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，氧化剂，腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 对二甲苯
+      basic: {
+        chineseName: "对二甲苯",
+        englishName: "p-Xylene",
+        cas: "106-42-3",
+        molecularFormula: "C₈H₁₀",
+        molecularWeight: "106.17 g/mol"
+      },
+      physChem: {
+        meltingPoint: "13.2 °C",
+        boilingPoint: "138.4 °C",
+        density: "0.86 g/cm³",
+        flashPoint: "27 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；皮肤刺激 类别2；急性毒性 类别4",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲酚皂（甲酚皂溶液/来苏儿）
+      basic: {
+        chineseName: "甲酚皂",
+        englishName: "Cresol soap",
+        cas: "混合物",
+        molecularFormula: "混合物（甲酚与肥皂溶液）",
+        molecularWeight: "混合物",
+        density: "约1.04 g/cm³",
+        flashPoint: ">110 °C"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别3；皮肤腐蚀 类别1B；严重眼损伤 类别1",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，有毒" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 间二甲苯
+      basic: {
+        chineseName: "间二甲苯",
+        englishName: "m-Xylene",
+        cas: "108-38-3",
+        molecularFormula: "C₈H₁₀",
+        molecularWeight: "106.17 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-47.4 °C",
+        boilingPoint: "139.1 °C",
+        density: "0.86 g/cm³",
+        flashPoint: "25 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；急性毒性 类别4；皮肤刺激 类别2",
+        pictogram: "🔥 火焰 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S16: 远离火源；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水氯化锂
+      basic: {
+        chineseName: "无水氯化锂",
+        englishName: "Lithium chloride anhydrous",
+        cas: "7447-41-8",
+        molecularFormula: "LiCl",
+        molecularWeight: "42.39 g/mol"
+      },
+      physChem: {
+        meltingPoint: "605 °C",
+        boilingPoint: "1382 °C",
+        density: "2.07 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别2；皮肤刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硝酸
+      basic: {
+        chineseName: "硝酸",
+        englishName: "Nitric acid",
+        cas: "7697-37-2",
+        molecularFormula: "HNO₃",
+        molecularWeight: "63.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-42 °C",
+        boilingPoint: "122 °C(68%)",
+        density: "1.41 g/cm³(68%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性液体 类别2；皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "🔥 火焰（圆圈） | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强氧化剂，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: true, desc: "属于易制爆危险化学品" }
+      }
+    },
+    {
+      // 氢氟酸
+      basic: {
+        chineseName: "氢氟酸",
+        englishName: "Hydrofluoric acid",
+        cas: "7664-39-3",
+        molecularFormula: "HF",
+        molecularWeight: "20.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-83.1 °C(纯)",
+        boilingPoint: "19.5 °C(纯)",
+        density: "1.15 g/cm³(49%)",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别2；皮肤腐蚀 类别1A；严重眼损伤 类别1",
+        pictogram: "💀 健康危险 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，高毒，强腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 乙酸酐
+      basic: {
+        chineseName: "乙酸酐",
+        englishName: "Acetic anhydride",
+        cas: "108-24-7",
+        molecularFormula: "C₄H₆O₃",
+        molecularWeight: "102.09 g/mol"
+      },
+      physChem: {
+        meltingPoint: "-73.1 °C",
+        boilingPoint: "139.6 °C",
+        density: "1.08 g/cm³",
+        flashPoint: "49 °C"
+      },
+      hazard: {
+        ghsCategory: "易燃液体 类别3；皮肤腐蚀 类别1B；严重眼损伤 类别1",
+        pictogram: "🔥 火焰 | ☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，易燃，腐蚀性" },
+        easyDrug: { is: true, desc: "属于易制毒化学品（第三类）" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 低亚硫酸钠（保险粉，与连二亚硫酸钠同物，已在前文列出，此为补充别名）
+      basic: {
+        chineseName: "低亚硫酸钠",
+        englishName: "Sodium hydrosulfite",
+        cas: "7775-14-6",
+        molecularFormula: "Na₂S₂O₄",
+        molecularWeight: "174.11 g/mol"
+      },
+      physChem: {
+        meltingPoint: "52 °C (分解)",
+        boilingPoint: "无",
+        density: "1.58 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "自热物质 类别1；遇水放出易燃气体 类别2；急性毒性 类别4",
+        pictogram: "🔥 火焰 | 💀 健康危险"
+      },
+      safety: {
+        sPhrases: "S22: 不要吸入粉尘；S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，自热，遇湿易燃" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 五水合硫代硫酸钠
+      basic: {
+        chineseName: "五水合硫代硫酸钠",
+        englishName: "Sodium thiosulfate pentahydrate",
+        cas: "10102-17-7",
+        molecularFormula: "Na₂S₂O₃·5H₂O",
+        molecularWeight: "248.18 g/mol"
+      },
+      physChem: {
+        meltingPoint: "48.5 °C (脱水)",
+        boilingPoint: "100 °C (分解)",
+        density: "1.67 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 碳酸氢钠
+      basic: {
+        chineseName: "碳酸氢钠",
+        englishName: "Sodium bicarbonate",
+        cas: "144-55-8",
+        molecularFormula: "NaHCO₃",
+        molecularWeight: "84.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "50 °C (分解)",
+        boilingPoint: "无",
+        density: "2.20 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 抗坏血酸（维生素C）
+      basic: {
+        chineseName: "抗坏血酸",
+        englishName: "Ascorbic acid",
+        cas: "50-81-7",
+        molecularFormula: "C₆H₈O₆",
+        molecularWeight: "176.12 g/mol"
+      },
+      physChem: {
+        meltingPoint: "190 °C (分解)",
+        boilingPoint: "无",
+        density: "1.65 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 香柏油
+      basic: {
+        chineseName: "香柏油",
+        englishName: "Cedarwood oil",
+        cas: "8000-27-9",
+        molecularFormula: "混合物（倍半萜烯为主）",
+        molecularWeight: "混合物",
+        density: "0.94-0.96 g/cm³",
+        flashPoint: ">100 °C"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // PH参比液
+      basic: {
+        chineseName: "pH参比液",
+        englishName: "pH reference solution",
+        cas: "混合物（缓冲盐溶液）",
+        molecularFormula: "混合物",
+        molecularWeight: "混合物",
+        density: "约1.00 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物（通常）",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 双甲酮醛试剂
+      basic: {
+        chineseName: "双甲酮醛试剂",
+        englishName: "Dimedone-aldehyde reagent",
+        cas: "混合物",
+        molecularFormula: "混合物",
+        molecularWeight: "混合物",
+        density: "未知",
+        flashPoint: "未知"
+      },
+      hazard: {
+        ghsCategory: "数据不完整，需根据具体组分确定",
+        pictogram: "数据不完整"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未在标准目录中列出" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 甲苯-4-磺酸一水
+      basic: {
+        chineseName: "甲苯-4-磺酸一水",
+        englishName: "p-Toluenesulfonic acid monohydrate",
+        cas: "6192-52-5",
+        molecularFormula: "C₇H₈O₃S·H₂O",
+        molecularWeight: "190.22 g/mol"
+      },
+      physChem: {
+        meltingPoint: "103-106 °C",
+        boilingPoint: "140 °C (分解)",
+        density: "1.34 g/cm³",
+        flashPoint: "150 °C"
+      },
+      hazard: {
+        ghsCategory: "皮肤腐蚀 类别1C；严重眼损伤 类别1",
+        pictogram: "☣️ 腐蚀"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》，但具腐蚀性" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 溴酚蓝
+      basic: {
+        chineseName: "溴酚蓝",
+        englishName: "Bromophenol blue",
+        cas: "115-39-9",
+        molecularFormula: "C₁₉H₁₀Br₄O₅S",
+        molecularWeight: "669.96 g/mol"
+      },
+      physChem: {
+        meltingPoint: "279 °C (分解)",
+        boilingPoint: "无",
+        density: "1.0 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 四苯硼酸
+      basic: {
+        chineseName: "四苯硼酸",
+        englishName: "Tetraphenylboric acid",
+        cas: "1469-55-2",
+        molecularFormula: "C₂₄H₂₀B",
+        molecularWeight: "319.23 g/mol"
+      },
+      physChem: {
+        meltingPoint: "218-220 °C",
+        boilingPoint: "无",
+        density: "1.02 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水亚硫酸钾
+      basic: {
+        chineseName: "无水亚硫酸钾",
+        englishName: "Potassium sulfite anhydrous",
+        cas: "10117-38-1",
+        molecularFormula: "K₂SO₃",
+        molecularWeight: "158.26 g/mol"
+      },
+      physChem: {
+        meltingPoint: "590 °C",
+        boilingPoint: "无",
+        density: "2.43 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "皮肤刺激 类别2；严重眼损伤/眼刺激 类别2",
+        pictogram: "⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 硼酸
+      basic: {
+        chineseName: "硼酸",
+        englishName: "Boric acid",
+        cas: "10043-35-3",
+        molecularFormula: "H₃BO₃",
+        molecularWeight: "61.83 g/mol"
+      },
+      physChem: {
+        meltingPoint: "170 °C (分解)",
+        boilingPoint: "300 °C",
+        density: "1.44 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "生殖毒性 类别2",
+        pictogram: "🎗️ 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水硫酸铜
+      basic: {
+        chineseName: "无水硫酸铜",
+        englishName: "Copper(II) sulfate anhydrous",
+        cas: "7758-98-7",
+        molecularFormula: "CuSO₄",
+        molecularWeight: "159.61 g/mol"
+      },
+      physChem: {
+        meltingPoint: "590 °C (分解)",
+        boilingPoint: "无",
+        density: "3.60 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "急性毒性 类别4；严重眼损伤/眼刺激 类别1；水生环境危害 类别1",
+        pictogram: "⚠️ 惊叹号 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 三氧化铬
+      basic: {
+        chineseName: "三氧化铬",
+        englishName: "Chromium trioxide",
+        cas: "1333-82-0",
+        molecularFormula: "CrO₃",
+        molecularWeight: "99.99 g/mol"
+      },
+      physChem: {
+        meltingPoint: "196 °C",
+        boilingPoint: "250 °C (分解)",
+        density: "2.70 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "氧化性固体 类别1；急性毒性 类别2；皮肤腐蚀 类别1A；致癌性 类别1A；水生环境危害 类别1",
+        pictogram: "🔥 火焰（圆圈） | 💀 健康危险 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护；S45: 发生事故立即就医"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "列入《危险化学品目录》，强氧化剂，致癌" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: true, desc: "属于易制爆危险化学品" }
+      }
+    },
+    {
+      // 二氧化钛
+      basic: {
+        chineseName: "二氧化钛",
+        englishName: "Titanium dioxide",
+        cas: "13463-67-7",
+        molecularFormula: "TiO₂",
+        molecularWeight: "79.87 g/mol"
+      },
+      physChem: {
+        meltingPoint: "1843 °C",
+        boilingPoint: "2972 °C",
+        density: "4.23 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "可疑致癌物(类别2，经吸入)",
+        pictogram: "🎗️ 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 碘化钾
+      basic: {
+        chineseName: "碘化钾",
+        englishName: "Potassium iodide",
+        cas: "7681-11-0",
+        molecularFormula: "KI",
+        molecularWeight: "166.00 g/mol"
+      },
+      physChem: {
+        meltingPoint: "681 °C",
+        boilingPoint: "1330 °C",
+        density: "3.12 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 无水氯化镁
+      basic: {
+        chineseName: "无水氯化镁",
+        englishName: "Magnesium chloride anhydrous",
+        cas: "7786-30-3",
+        molecularFormula: "MgCl₂",
+        molecularWeight: "95.21 g/mol"
+      },
+      physChem: {
+        meltingPoint: "714 °C",
+        boilingPoint: "1412 °C",
+        density: "2.32 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 酚酞
+      basic: {
+        chineseName: "酚酞",
+        englishName: "Phenolphthalein",
+        cas: "77-09-8",
+        molecularFormula: "C₂₀H₁₄O₄",
+        molecularWeight: "318.32 g/mol"
+      },
+      physChem: {
+        meltingPoint: "258-263 °C",
+        boilingPoint: "无",
+        density: "1.27 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "致癌性 类别1B",
+        pictogram: "🎗️ 健康危险"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》，但欧盟列为CMR物质" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 十二烷基苯磺酸钠
+      basic: {
+        chineseName: "十二烷基苯磺酸钠",
+        englishName: "Sodium dodecylbenzenesulfonate",
+        cas: "25155-30-0",
+        molecularFormula: "C₁₈H₂₉NaO₃S",
+        molecularWeight: "348.48 g/mol"
+      },
+      physChem: {
+        meltingPoint: ">300 °C",
+        boilingPoint: "分解",
+        density: "1.02 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别1；皮肤刺激 类别2",
+        pictogram: "☣️ 腐蚀 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 人造沸石
+      basic: {
+        chineseName: "人造沸石",
+        englishName: "Synthetic zeolite",
+        cas: "1318-02-1",
+        molecularFormula: "铝硅酸盐混合物",
+        molecularWeight: "混合物",
+        density: "约2.0-2.5 g/cm³",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 直接蓝71
+      basic: {
+        chineseName: "直接蓝71",
+        englishName: "Direct Blue 71",
+        cas: "4399-55-7",
+        molecularFormula: "C₄₀H₂₄N₇Na₃O₁₃S₄",
+        molecularWeight: "1029.94 g/mol"
+      },
+      physChem: {
+        meltingPoint: ">250 °C (分解)",
+        boilingPoint: "无",
+        density: "0.8-1.1 g/cm³（松散）",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "非危险物质或混合物（通常）",
+        pictogram: "无"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 去污粉（主要成分：碳酸钠、表面活性剂、硅藻土等）
+      basic: {
+        chineseName: "去污粉",
+        englishName: "Cleaning powder",
+        cas: "混合物",
+        molecularFormula: "混合物（Na₂CO₃ + 表面活性剂 + 硅藻土）",
+        molecularWeight: "混合物"
+      },
+      physChem: {
+        meltingPoint: "851 °C（主要成分碳酸钠）",
+        boilingPoint: "1600 °C（主要成分碳酸钠）",
+        density: "0.8-1.2 g/cm³（松散）",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "严重眼损伤/眼刺激 类别1（高浓度）；皮肤刺激 类别3",
+        pictogram: "☣️ 腐蚀（高浓度时）"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗；S36: 穿戴适当的防护服"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》，为日用清洁剂" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 变色硅胶（主要成分：硅胶 + 氯化钴湿度指示剂）
+      basic: {
+        chineseName: "变色硅胶",
+        englishName: "Silica gel with moisture indicator",
+        cas: "112926-00-8（硅胶基质）",
+        molecularFormula: "SiO₂·nH₂O + CoCl₂",
+        molecularWeight: "混合物（硅胶约60.08 g/mol单体）"
+      },
+      physChem: {
+        meltingPoint: "1600 °C（硅胶）",
+        boilingPoint: "2230 °C",
+        density: "2.1-2.2 g/cm³（硅胶）",
+        flashPoint: "不燃"
+      },
+      hazard: {
+        ghsCategory: "含氯化钴：致癌性 类别1B；生殖毒性 类别1B；呼吸道致敏 类别1；皮肤致敏 类别1",
+        pictogram: "🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S36/37: 穿戴适当的防护服和手套；S45: 发生事故立即就医；S53: 避免接触"
+      },
+      regulation: {
+        dangerousChemical: { is: true, desc: "因含氯化钴，列入《危险化学品目录》（2015版）第1464条" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 标准媒剂（纺织染整助剂，具体成分因厂家而异）
+      basic: {
+        chineseName: "标准媒剂",
+        englishName: "Standard mordant",
+        cas: "混合物",
+        molecularFormula: "混合物（通常含金属盐类+有机酸+表面活性剂）",
+        molecularWeight: "混合物"
+      },
+      physChem: {
+        meltingPoint: "无固定值",
+        boilingPoint: ">100 °C（水溶液）",
+        density: "约1.0-1.3 g/cm³",
+        flashPoint: "通常 >93 °C"
+      },
+      hazard: {
+        ghsCategory: "根据具体配方确定，常见含铬媒剂为：致癌性 类别1B；皮肤腐蚀/刺激 类别1；水生环境危害 类别1",
+        pictogram: "🎗️ 健康危险 | ☣️ 腐蚀 | 🌊 环境"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗；S36/37/39: 穿戴适当的防护服、手套和眼睛防护"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未直接列入目录，但含重金属（如铬、铝盐）时需参照相关条目管控" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品" }
+      }
+    },
+    {
+      // 高色素炭黑
+      basic: {
+        chineseName: "高色素炭黑",
+        englishName: "High color carbon black",
+        cas: "1333-86-4",
+        molecularFormula: "C",
+        molecularWeight: "12.01 g/mol"
+      },
+      physChem: {
+        meltingPoint: "3650 °C（升华）",
+        boilingPoint: "4200 °C",
+        density: "1.8-2.1 g/cm³",
+        flashPoint: "不燃（但为可燃粉尘）"
+      },
+      hazard: {
+        ghsCategory: "可疑致癌物（类别2，长期吸入）；粉尘爆炸风险",
+        pictogram: "🎗️ 健康危险 | ⚠️ 惊叹号"
+      },
+      safety: {
+        sPhrases: "S24/25: 避免皮肤和眼睛接触；S26: 眼睛接触后立即用大量水冲洗；S36/37: 穿戴适当的防护服和手套；S51: 仅在通风良好处使用"
+      },
+      regulation: {
+        dangerousChemical: { is: false, desc: "未列入《危险化学品目录》，但高色素炭黑粉尘被国际癌症研究机构(IARC)列为2B类致癌物" },
+        easyDrug: { is: false, desc: "不属易制毒化学品" },
+        easyExplosive: { is: false, desc: "不属易制爆化学品，但粉尘具爆炸性" }
+      }
+    }
     ];
 
-    // 辅助函数：精确匹配（支持中文名完全匹配，英文名忽略大小写完全匹配，CAS完全匹配）
+    // ========== 模糊匹配（子串，最多50条） ==========
     function findChemicalByInput(inputStr) {
-        if (!inputStr || inputStr.trim() === "") return null;
-        const query = inputStr.trim();
-        
+        if (!inputStr || inputStr.trim() === "") return [];
+        const query = inputStr.trim().toLowerCase();
+        const results = [];
         for (let chem of chemicalsData) {
-            // 中文名完全匹配（精确）
-            if (chem.basic.chineseName === query) {
-                return chem;
-            }
-            // 英文名忽略大小写精确匹配
-            if (chem.basic.englishName.toLowerCase() === query.toLowerCase()) {
-                return chem;
-            }
-            // CAS号完全匹配 (包括字母/短横，精确)
-            if (chem.basic.cas === query) {
-                return chem;
+            if (results.length >= 50) break;
+            const chn = chem.basic.chineseName.toLowerCase();
+            const eng = chem.basic.englishName.toLowerCase();
+            const cas = chem.basic.cas.toLowerCase();
+            if (chn.includes(query) || eng.includes(query) || cas.includes(query)) {
+                results.push(chem);
             }
         }
-        return null;
+        return results;
     }
 
-    // 渲染化学品卡片 (五大分块)
-    function renderChemicalCard(chemical) {
-        if (!chemical) return "";
-        
-        // 基本信息渲染
-        const basicHtml = `
-            <div class="card">
-                <div class="card-header"><h3>📋 基本信息</h3></div>
-                <div class="card-content">
-                    <div class="info-row"><div class="info-label">中文名</div><div class="info-value">${escapeHtml(chemical.basic.chineseName)}</div></div>
-                    <div class="info-row"><div class="info-label">英文名</div><div class="info-value">${escapeHtml(chemical.basic.englishName)}</div></div>
-                    <div class="info-row"><div class="info-label">CAS号</div><div class="info-value">${escapeHtml(chemical.basic.cas)}</div></div>
-                    <div class="info-row"><div class="info-label">分子式</div><div class="info-value">${escapeHtml(chemical.basic.molecularFormula)}</div></div>
-                    <div class="info-row"><div class="info-label">分子量</div><div class="info-value">${escapeHtml(chemical.basic.molecularWeight)}</div></div>
-                </div>
-            </div>
-        `;
-        
-        // 物理化学性质卡片
-        const physChemHtml = `
-            <div class="card">
-                <div class="card-header"><h3>⚗️ 物理化学性质</h3></div>
-                <div class="card-content">
-                    <div class="info-row"><div class="info-label">熔点</div><div class="info-value">${escapeHtml(chemical.physChem.meltingPoint || "无数据")}</div></div>
-                    <div class="info-row"><div class="info-label">沸点</div><div class="info-value">${escapeHtml(chemical.physChem.boilingPoint || "无数据")}</div></div>
-                    <div class="info-row"><div class="info-label">密度</div><div class="info-value">${escapeHtml(chemical.physChem.density || "无数据")}</div></div>
-                    <div class="info-row"><div class="info-label">闪点</div><div class="info-value">${escapeHtml(chemical.physChem.flashPoint || "无数据")}</div></div>
-                </div>
-            </div>
-        `;
-        
-        // 危险性分类卡片
-        const hazardHtml = `
-            <div class="card">
-                <div class="card-header"><h3>⚠️ 危险性分类</h3></div>
-                <div class="card-content">
-                    <div class="info-row"><div class="info-label">GHS危险类别</div><div class="info-value">${escapeHtml(chemical.hazard.ghsCategory || "未提供")}</div></div>
-                    <div class="info-row"><div class="info-label">危险象形图</div><div class="info-value">${escapeHtml(chemical.hazard.pictogram || "无")}</div></div>
-                </div>
-            </div>
-        `;
-        
-        // 安全术语卡片 (S-phrases)
-        const safetyHtml = `
-            <div class="card">
-                <div class="card-header"><h3>🛡️ 安全术语 (S-phrases)</h3></div>
-                <div class="card-content">
-                    <div class="info-row"><div class="info-label">S-短语</div><div class="info-value">${escapeHtml(chemical.safety.sPhrases || "未提供")}</div></div>
-                </div>
-            </div>
-        `;
-        
-        // 法规信息卡片：危化品、易制毒、易制爆 (每个都含“是/否+说明”)
-        const reg = chemical.regulation;
-        const dangerousHtml = `
-            <div class="reg-item">
-                <div class="reg-title">📌 危险化学品</div>
-                <div>
-                    <span class="${reg.dangerousChemical.is ? 'badge-yes' : 'badge-no'}">${reg.dangerousChemical.is ? "是" : "否"}</span>
-                    <span class="reg-desc">${escapeHtml(reg.dangerousChemical.desc)}</span>
-                </div>
-            </div>
-        `;
-        const easyDrugHtml = `
-            <div class="reg-item">
-                <div class="reg-title">🧪 易制毒化学品</div>
-                <div>
-                    <span class="${reg.easyDrug.is ? 'badge-yes' : 'badge-no'}">${reg.easyDrug.is ? "是" : "否"}</span>
-                    <span class="reg-desc">${escapeHtml(reg.easyDrug.desc)}</span>
-                </div>
-            </div>
-        `;
-        const easyExplosiveHtml = `
-            <div class="reg-item">
-                <div class="reg-title">💥 易制爆化学品</div>
-                <div>
-                    <span class="${reg.easyExplosive.is ? 'badge-yes' : 'badge-no'}">${reg.easyExplosive.is ? "是" : "否"}</span>
-                    <span class="reg-desc">${escapeHtml(reg.easyExplosive.desc)}</span>
-                </div>
-            </div>
-        `;
-        
-        const regulationHtml = `
-            <div class="card">
-                <div class="card-header"><h3>📜 法规信息</h3></div>
-                <div class="card-content">
-                    ${dangerousHtml}
-                    ${easyDrugHtml}
-                    ${easyExplosiveHtml}
-                </div>
-            </div>
-        `;
-        
-        return basicHtml + physChemHtml + hazardHtml + safetyHtml + regulationHtml;
-    }
-    
-    // 简单防XSS工具（因为数据安全硬编码，但为了健壮）
     function escapeHtml(str) {
         if (!str) return "";
         return str.replace(/[&<>]/g, function(m) {
@@ -479,75 +3431,108 @@
             if (m === '<') return '&lt;';
             if (m === '>') return '&gt;';
             return m;
-        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
-            return c;
         });
     }
-    
-    // 显示错误或未找到信息
-    function showNotFoundMessage(query) {
-        const container = document.getElementById("resultContainer");
-        container.innerHTML = `
-            <div class="error-message">
-                ❌ 未找到化学品 "${escapeHtml(query)}" <br>
-                请检查中文名、英文名或CAS号是否输入准确（精确匹配）。
+
+    // 安全获取嵌套属性
+    function getSafe(obj, path, defaultValue = "无数据") {
+        const keys = path.split('.');
+        let val = obj;
+        for (let k of keys) {
+            if (val === undefined || val === null) return defaultValue;
+            val = val[k];
+        }
+        return (val === undefined || val === null) ? defaultValue : val;
+    }
+
+    function renderChemicalCard(chem) {
+        // 安全取值
+        const basic = chem.basic || {};
+        const phys = chem.physChem || {};
+        const haz = chem.hazard || {};
+        const safe = chem.safety || {};
+        const reg = chem.regulation || { dangerousChemical: {}, easyDrug: {}, easyExplosive: {} };
+        const dangerous = reg.dangerousChemical || {};
+        const easyDrug = reg.easyDrug || {};
+        const easyExplosive = reg.easyExplosive || {};
+
+        return `
+            <div class="card">
+                <div class="card-header"><h3>📋 基本信息</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">中文名</div><div class="info-value">${escapeHtml(basic.chineseName || "未知")}</div></div>
+                    <div class="info-row"><div class="info-label">英文名</div><div class="info-value">${escapeHtml(basic.englishName || "未知")}</div></div>
+                    <div class="info-row"><div class="info-label">CAS号</div><div class="info-value">${escapeHtml(basic.cas || "未知")}</div></div>
+                    <div class="info-row"><div class="info-label">分子式</div><div class="info-value">${escapeHtml(basic.molecularFormula || "未知")}</div></div>
+                    <div class="info-row"><div class="info-label">分子量</div><div class="info-value">${escapeHtml(basic.molecularWeight || "未知")}</div></div>
+                </div>
             </div>
-            <div class="empty-state">
-                📖 提示: 可使用完整名称查询<br>示例: 甲醇 / Methanol / 67-56-1
+            <div class="card">
+                <div class="card-header"><h3>⚗️ 物理化学性质</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">熔点</div><div class="info-value">${escapeHtml(phys.meltingPoint || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">沸点</div><div class="info-value">${escapeHtml(phys.boilingPoint || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">密度</div><div class="info-value">${escapeHtml(phys.density || "无数据")}</div></div>
+                    <div class="info-row"><div class="info-label">闪点</div><div class="info-value">${escapeHtml(phys.flashPoint || "无数据")}</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>⚠️ 危险性分类</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">GHS类别</div><div class="info-value">${escapeHtml(haz.ghsCategory || "未提供")}</div></div>
+                    <div class="info-row"><div class="info-label">象形图</div><div class="info-value">${escapeHtml(haz.pictogram || "无")}</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>🛡️ 安全术语</h3></div>
+                <div class="card-content">
+                    <div class="info-row"><div class="info-label">S-短语</div><div class="info-value">${escapeHtml(safe.sPhrases || "未提供")}</div></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3>📜 法规信息</h3></div>
+                <div class="card-content">
+                    <div class="reg-item"><div class="reg-title">危险化学品</div><div><span class="${dangerous.is ? 'badge-yes' : 'badge-no'}">${dangerous.is ? "是" : "否"}</span><span class="reg-desc">${escapeHtml(dangerous.desc || "")}</span></div></div>
+                    <div class="reg-item"><div class="reg-title">易制毒化学品</div><div><span class="${easyDrug.is ? 'badge-yes' : 'badge-no'}">${easyDrug.is ? "是" : "否"}</span><span class="reg-desc">${escapeHtml(easyDrug.desc || "")}</span></div></div>
+                    <div class="reg-item"><div class="reg-title">易制爆化学品</div><div><span class="${easyExplosive.is ? 'badge-yes' : 'badge-no'}">${easyExplosive.is ? "是" : "否"}</span><span class="reg-desc">${escapeHtml(easyExplosive.desc || "")}</span></div></div>
+                </div>
             </div>
         `;
     }
-    
-    // 主查询逻辑
+
     function performSearch() {
         const inputEl = document.getElementById("chemicalInput");
         const query = inputEl.value.trim();
+        const container = document.getElementById("resultContainer");
         if (query === "") {
-            // 空输入友好提醒但不报错，展示默认提示
-            const container = document.getElementById("resultContainer");
-            container.innerHTML = `
-                <div class="empty-state">
-                    🔍 请输入化学品中文名/英文名/CAS号进行查询
-                </div>
-            `;
+            container.innerHTML = `<div class="empty-state">🔍 请输入化学品名称、CAS号或英文名进行查询</div>`;
             return;
         }
-        
-        const matchedChem = findChemicalByInput(query);
-        const container = document.getElementById("resultContainer");
-        
-        if (matchedChem) {
-            // 渲染卡片
-            const cardsHtml = renderChemicalCard(matchedChem);
-            container.innerHTML = cardsHtml;
-            // 滚动平滑到结果区域
-            container.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-            showNotFoundMessage(query);
+        const results = findChemicalByInput(query);
+        if (results.length === 0) {
+            container.innerHTML = `<div class="error-message">❌ 未找到与 "${escapeHtml(query)}" 相关的化学品</div><div class="empty-state">📖 提示：支持部分匹配，如“甲醇”可匹配“甲醇”和“苯甲醇”</div>`;
+            return;
         }
+        let headerHtml = `<div class="result-header">🔎 找到 ${results.length} 条相关化学品 ${results.length >= 50 ? "(已达显示上限50条)" : ""}</div>`;
+        let cardsHtml = "";
+        for (let i = 0; i < results.length; i++) {
+            cardsHtml += renderChemicalCard(results[i]);
+            if (i < results.length - 1) cardsHtml += `<div style="height: 6px;"></div>`;
+        }
+        container.innerHTML = headerHtml + cardsHtml;
+        container.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    
-    // 绑定事件 + 键盘支持
+
     document.addEventListener("DOMContentLoaded", function() {
-        const searchBtn = document.getElementById("searchBtn");
-        const inputField = document.getElementById("chemicalInput");
-        
-        searchBtn.addEventListener("click", performSearch);
-        inputField.addEventListener("keypress", function(e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                performSearch();
-            }
+        const btn = document.getElementById("searchBtn");
+        const input = document.getElementById("chemicalInput");
+        btn.addEventListener("click", performSearch);
+        input.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") performSearch();
         });
-        
-        // 可选初始占位: 默认不自动查询，保持占位提示即可
-        // 保证加载完成时显示友好占位 (已经存在空状态，不做额外动作)
-        
-        // 如果URL带有演示?demo 可以展示第一条？但无需额外，完全按用户交互
+        // 初始提示
+        console.log("页面已加载，化学品数量:", chemicalsData.length);
     });
-    
-    // 为了方便维护，控制台输出数据结构说明 (无实际影响)
-    console.log("化学品库已加载，当前记录数: " + chemicalsData.length + "，支持中文/英文/CAS精确匹配");
 </script>
 </body>
 </html>
